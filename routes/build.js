@@ -35,21 +35,16 @@ router.post('/', upload.array('files'), async (req, res) => {
   const uploadFolder = req.files[0].destination
 
   try {
-    // existing code
-  } catch (err) {
-    // existing code
-  }
-}
+    // Debug
+    const landed = await fs.readdir(uploadFolder)
+    console.log('Upload folder:', uploadFolder)
+    console.log('Files found:', landed)
 
-  // Debug
-  const landed = await fs.readdir(uploadFolder)
-  console.log('Upload folder:', uploadFolder)
-  console.log('Files found:', landed)
-
-  try {
     const validation = await validateManifest(uploadFolder)
+
     if (!validation.valid) {
       await fs.remove(uploadFolder)
+
       return res.status(400).json({
         success: false,
         error: validation.error
@@ -57,18 +52,26 @@ router.post('/', upload.array('files'), async (req, res) => {
     }
 
     const { manifest } = validation
+
     const appName = manifest.name.replace(/\s+/g, '_')
     const version = manifest.version
 
-    const dtaPath = path.join('./temp', `${appName}_${version}.dta`)
-    const dtPath = path.join('./temp', `${appName}_${version}.dt`)
+    const dtaPath = path.join(
+      './temp',
+      `${appName}_${version}.dta`
+    )
+
+    const dtPath = path.join(
+      './temp',
+      `${appName}_${version}.dt`
+    )
 
     await buildDta(uploadFolder, dtaPath)
     await buildDt(uploadFolder, dtPath)
 
     await fs.remove(uploadFolder)
 
-    res.json({
+    return res.json({
       success: true,
       message: 'App built successfully',
       app: {
@@ -81,10 +84,14 @@ router.post('/', upload.array('files'), async (req, res) => {
         dt: `/api/download/${path.basename(dtPath)}`
       }
     })
-
   } catch (err) {
-    await fs.remove(uploadFolder)
-    res.status(500).json({
+    console.error(err)
+
+    if (await fs.pathExists(uploadFolder)) {
+      await fs.remove(uploadFolder)
+    }
+
+    return res.status(500).json({
       success: false,
       error: err.message
     })
