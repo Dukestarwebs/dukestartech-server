@@ -24,18 +24,22 @@ const storage = multer.diskStorage({
 const upload = multer({ storage })
 
 router.post('/', upload.array('files'), async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'No files uploaded'
+    })
+  }
+
+  sharedUploadPath = null
+  const uploadFolder = req.files[0].destination
+
   try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'No files uploaded'
-      })
-    }
-
-    sharedUploadPath = null
-    const uploadFolder = req.files[0].destination
-
-    // rest of code...
+    // existing code
+  } catch (err) {
+    // existing code
+  }
+}
 
   // Debug
   const landed = await fs.readdir(uploadFolder)
